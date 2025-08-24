@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin - Quản lý tố cáo</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .modal-backdrop { z-index: 1040 !important; }
+    .modal-content { z-index: 1100 !important; }
+  </style>
+</head>
+<body class="bg-light">
+  <div class="container py-5">
+    <h2 class="text-center text-primary mb-4">📋 Quản trị tố cáo</h2>
+    <button class="btn btn-primary mb-3" onclick="openAddModal()">+ Thêm tố cáo</button>
+    <table class="table table-bordered table-striped align-middle">
+      <thead>
+        <tr>
+          <th>ID</th><th>Người tố cáo</th><th>Scammer</th><th>STK</th><th>SĐT</th><th>Trạng thái</th><th>Hành động</th>
+        </tr>
+      </thead>
+      <tbody id="reportTable"></tbody>
+    </table>
+  </div>
+
+  <!-- Modal Thêm/Sửa -->
+  <div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog">
+      <form class="modal-content" id="editForm" onsubmit="saveReport(event)">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalTitle">Thêm/Sửa tố cáo</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="reportId">
+          <div class="mb-2">
+            <label class="form-label">Người tố cáo</label>
+            <input type="text" class="form-control" id="reporter_name" required>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Tên scammer</label>
+            <input type="text" class="form-control" id="scammer_name">
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Số tài khoản</label>
+            <input type="text" class="form-control" id="bank_account">
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Số điện thoại</label>
+            <input type="text" class="form-control" id="phone">
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Nội dung tố cáo</label>
+            <textarea class="form-control" id="content" rows="2"></textarea>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Trạng thái</label>
+            <select class="form-select" id="status">
+              <option value="pending">Chờ duyệt</option>
+              <option value="approved">Đã duyệt</option>
+              <option value="rejected">Từ chối</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-success">Lưu</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+let editModal = new bootstrap.Modal(document.getElementById('editModal'));
+let editingId = null;
+
+async function loadReports(){
+  let res = await fetch("admin.php?action=list");
+  let data = await res.json();
+  let tbody = document.getElementById("reportTable");
+  tbody.innerHTML = "";
+  data.forEach(r => {
+    tbody.innerHTML += `
+      <tr>
+        <td>${r.id}</td>
+        <td>${r.reporter_name}</td>
+        <td>${r.scammer_name}</td>
+        <td>${r.bank_account}</td>
+        <td>${r.phone || "N/A"}</td>
+        <td>${statusLabel(r.status)}</td>
+        <td>
+          <button class="btn btn-success btn-sm" onclick="updateStatus(${r.id}, 'approved')">Duyệt</button>
+          <button class="btn btn-danger btn-sm" onclick="updateStatus(${r.id}, 'rejected')">Từ chối</button>
+          <button class="btn btn-warning btn-sm" onclick="openEditModal(${r.id})">Sửa</button>
+          <button class="btn btn-secondary btn-sm" onclick="deleteReport(${r.id})">Xóa</button>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+function statusLabel(status) {
+  if(status === 'approved') return '<span class="badge bg-success">Đã duyệt</span>';
+  if(status === 'rejected') return '<span class="badge bg-danger">Từ chối</span>';
+  return '<span class="badge bg-warning text-dark">Chờ duyệt</span>';
+}
+
+function openAddModal() {
+  editingId = null;
+  document.getElementById('modalTitle').textContent = "Thêm tố cáo";
+  document.getElementById('editForm').reset();
+  document.getElementById('reportId').value = '';
+  editModal.show();
+}
+
+async function openEditModal(id) {
+  editingId = id;
+  let res = await fetch(`admin.php?action=get&id=${id}`);
+  let r = await res.json();
+  document.getElementById('modalTitle').textContent = "Sửa tố cáo";
+  document.getElementById('reportId').value = r.id;
+  document.getElementById('reporter_name').value = r.reporter_name;
+  document.getElementById('scammer_name').value = r.scammer_name;
+  document.getElementById('bank_account').value = r.bank_account;
+  document.getElementById('phone').value = r.phone;
+  document.getElementById('content').value = r.content;
+  document.getElementById('status').value = r.status;
+  editModal.show();
+}
+
+async function saveReport(e) {
+  e.preventDefault();
+  let id = document.getElementById('reportId').value;
+  let data = {
+    reporter_name: document.getElementById('reporter_name').value,
+    scammer_name: document.getElementById('scammer_name').value,
+    bank_account: document.getElementById('bank_account').value,
+    phone: document.getElementById('phone').value,
+    content: document.getElementById('content').value,
+    status: document.getElementById('status').value
+  };
+  let url = "admin.php?action=" + (id ? "update" : "add");
+  if(id) data.id = id;
+  await fetch(url, {
+    method: "POST",
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(data)
+  });
+  editModal.hide();
+  loadReports();
+}
+
+async function deleteReport(id) {
+  if(confirm("Bạn chắc chắn muốn xóa đơn này?")) {
+    await fetch(`admin.php?action=delete&id=${id}`);
+    loadReports();
+  }
+}
+
+async function updateStatus(id, status){
+  await fetch(`admin.php?action=update&id=${id}&status=${status}`);
+  loadReports();
+  // Nếu duyệt, có thể gọi thêm API để đẩy lên index/lịch sử nếu cần
+}
+
+loadReports();
+</script>
+</body>
+</html>

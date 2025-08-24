@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Tố cáo lừa đảo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div class="brand">
+      <div class="logo"></div>
+      <div class="title">🚨 Tố cáo</div>
+    </div>
+    <a href="index.html" class="btn-report">← Quay lại</a>
+  </div>
+
+  <div class="card fadeIn">
+    <form id="reportForm">
+      <select id="report-type">
+        <option value="phone">Số điện thoại</option>
+        <option value="bank">Số tài khoản</option>
+        <option value="link">Link Facebook</option>
+      </select>
+      <input id="report-value" placeholder="Nhập giá trị cần tố cáo" required />
+      <input id="report-title" placeholder="Tiêu đề (ngắn gọn)" required />
+      <textarea id="report-excerpt" placeholder="Mô tả chi tiết..." required></textarea>
+      <input id="report-source" placeholder="Nguồn (nếu có)" />
+      <input id="report-url" placeholder="Link minh chứng (nếu có)" />
+      <button type="submit">Gửi tố cáo</button>
+    </form>
+    <div id="report-msg" style="margin-top:10px;"></div>
+  </div>
+</div>
+<script src="script.js"></script>
+</body>
+</html>
